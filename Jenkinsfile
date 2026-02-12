@@ -19,14 +19,14 @@ pipeline {
             }
         }
 
-        stage('Package Lambda') {
-            steps {
-                sh '''
-                echo "📦 Packaging Lambda function"
-                zip -r lambda.zip index.py
-                '''
-            }
-        }
+        // stage('Package Lambda') {
+        //     steps {
+        //         sh '''
+        //         echo "📦 Packaging Lambda function"
+        //         zip -r lambda.zip index.py
+        //         '''
+        //     }
+        // }
 
         stage('Terraform Init') {
             steps {
