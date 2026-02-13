@@ -1,55 +1,33 @@
+import boto3
 import json
 import os
-import boto3
 
-bedrock = boto3.client("bedrock-runtime")
-
-MODEL_ID = os.environ["BEDROCK_MODEL_ID"]
+bedrock = boto3.client('bedrock', region_name='eu-north-1')
 
 def lambda_handler(event, context):
-    drift_json = json.dumps(event)
+    # Step 1: List all inference profiles
+    profiles = bedrock.list_inference_profiles()['inferenceProfileSummaries']
+    
+    # Step 2: Filter active profiles in eu-north-1
+    active_profiles = [
+        p for p in profiles 
+        if p['status'] == 'ACTIVE' and p['inferenceProfileArn'].startswith('arn:aws:bedrock:eu-north-1:')
+    ]
+    
+    if not active_profiles:
+        return {"error": "No active inference profiles in eu-north-1"}
 
-    prompt = f"""
-You are a Terraform infrastructure risk analyst.
+    # Pick the first active profile
+    profile_arn = active_profiles[0]['inferenceProfileArn']
 
-Analyze the following Terraform drift JSON and return ONLY valid JSON.
-
-Rules:
-- No markdown
-- No explanations outside JSON
-
-Return format:
-{{
-  "severity": "Low|Medium|High",
-  "security_risk": "...",
-  "cost_impact": "...",
-  "operational_risk": "...",
-  "recommended_action": "...",
-  "auto_apply_safe": true|false
-}}
-
-Terraform Drift JSON:
-{drift_json}
-"""
+    # Step 3: Invoke the model via the inference profile
+    drift_summary = event  # assuming drift-summary.json is passed as Lambda event
 
     response = bedrock.invoke_model(
-        modelId="anthropic.claude-sonnet-4-20250514-v1:0",
-        contentType="application/json",
-        accept="application/json",
-        body=json.dumps({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "max_tokens": 500
-        })
+        modelId=profile_arn,
+        contentType='application/json',
+        accept='application/json',
+        body=json.dumps(drift_summary)
     )
 
-    result = json.loads(response["body"].read())
-
-    return {
-        "statusCode": 200,
-        "analysis": result
-    }
+    return response
