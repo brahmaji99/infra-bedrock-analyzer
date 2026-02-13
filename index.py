@@ -32,7 +32,11 @@ Drift Data:
                 "messages": [
                     {
                         "role": "user",
-                        "content": prompt_text
+                        "content": [
+                            {
+                                "text": prompt_text
+                            }
+                        ]
                     }
                 ],
                 "inferenceConfig": {
@@ -41,7 +45,6 @@ Drift Data:
                 }
             })
         )
-
         result = json.loads(response["body"].read().decode())
 
         print("Bedrock raw result:", result)
