@@ -1,50 +1,53 @@
 import json
 import boto3
 
-# Correct client for invoking models
-bedrock = boto3.client('bedrock-runtime', region_name='eu-north-1')
+bedrock = boto3.client("bedrock-runtime", region_name="eu-north-1")
 
 def lambda_handler(event, context):
-    """
-    Lambda handler to send Terraform drift summary to Bedrock (Nova Micro)
-    """
     try:
-        # Load event payload
+        print("VERSION 3 - NOVA INPUTTEXT FORMAT")
+
+        # Parse event safely
         if isinstance(event, dict):
             drift_summary = event
         else:
             drift_summary = json.loads(event)
 
-        prompt_text = json.dumps(drift_summary, indent=2)
+        prompt_text = f"""
+You are a Terraform drift analysis expert.
 
-        # Bedrock now requires 'messages' key
-        body_payload = {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt_text}
-                    ]
-                }
-            ]
-        }
+Analyze the following Terraform drift JSON and:
+1. Classify risk level (LOW / MEDIUM / HIGH)
+2. Explain what changed
+3. Suggest remediation steps
 
-        # Invoke model
+Drift Data:
+{json.dumps(drift_summary, indent=2)}
+"""
+
         response = bedrock.invoke_model(
             modelId="arn:aws:bedrock:eu-north-1:206716568967:inference-profile/eu.amazon.nova-micro-v1:0",
-            body=json.dumps(body_payload),
-            contentType="application/json"
+            contentType="application/json",
+            body=json.dumps({
+                "inputText": prompt_text,
+                "textGenerationConfig": {
+                    "maxTokenCount": 1000,
+                    "temperature": 0.2
+                }
+            })
         )
 
-        # Decode model response
-        result = json.loads(response['body'].read().decode())
+        result = json.loads(response["body"].read().decode())
+
+        print("Bedrock raw result:", result)
 
         return {
             "statusCode": 200,
-            "body": result
+            "analysis": result
         }
 
     except Exception as e:
+        print("ERROR:", str(e))
         return {
             "statusCode": 500,
             "errorType": type(e).__name__,
