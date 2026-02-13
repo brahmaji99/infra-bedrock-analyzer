@@ -3,5 +3,5 @@ variable "region" {
 }
 
 variable "bedrock_model_id" {
-  default = "anthropic.claude-sonnet-4-20250514-v1:0"
+  default = "arn:aws:bedrock:eu-north-1:206716568967:inference-profile/eu.amazon.nova-micro-v1:0"
 }

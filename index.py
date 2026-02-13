@@ -24,7 +24,7 @@ def lambda_handler(event, context):
     drift_summary = event  # assuming drift-summary.json is passed as Lambda event
 
     response = bedrock.invoke_model(
-        modelId=profile_arn,
+        modelId="arn:aws:bedrock:eu-north-1:206716568967:inference-profile/eu.amazon.nova-micro-v1:0",
         contentType='application/json',
         accept='application/json',
         body=json.dumps(drift_summary)
