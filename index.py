@@ -1,33 +1,41 @@
-import boto3
 import json
+import boto3
 import os
 
+# Bedrock client
 bedrock = boto3.client('bedrock', region_name='eu-north-1')
 
 def lambda_handler(event, context):
-    # Step 1: List all inference profiles
-    profiles = bedrock.list_inference_profiles()['inferenceProfileSummaries']
-    
-    # Step 2: Filter active profiles in eu-north-1
-    active_profiles = [
-        p for p in profiles 
-        if p['status'] == 'ACTIVE' and p['inferenceProfileArn'].startswith('arn:aws:bedrock:eu-north-1:')
-    ]
-    
-    if not active_profiles:
-        return {"error": "No active inference profiles in eu-north-1"}
+    try:
+        # Read input payload from Lambda invoke (your Jenkins drift-summary.json)
+        if isinstance(event, str):
+            event = json.loads(event)
+        
+        # Construct prompt text from drift summary
+        drift_summary = json.dumps(event, indent=2)
+        prompt_text = f"Analyze the following Terraform drift report and summarize the changes:\n{drift_summary}"
 
-    # Pick the first active profile
-    profile_arn = active_profiles[0]['inferenceProfileArn']
+        # Bedrock invocation using an inference profile
+        # Replace modelId with the inferenceProfileArn for Nova Micro
+        response = bedrock.invoke_model(
+            modelId="arn:aws:bedrock:eu-north-1:206716568967:inference-profile/eu.amazon.nova-micro-v1:0",
+            body=json.dumps({"inputText": prompt_text}),
+            contentType="application/json"
+        )
 
-    # Step 3: Invoke the model via the inference profile
-    drift_summary = event  # assuming drift-summary.json is passed as Lambda event
+        # Read response from Bedrock
+        response_body = response['body'].read().decode('utf-8')
+        result = json.loads(response_body)
 
-    response = bedrock.invoke_model(
-        modelId="arn:aws:bedrock:eu-north-1:206716568967:inference-profile/eu.amazon.nova-micro-v1:0",
-        contentType='application/json',
-        accept='application/json',
-        body=json.dumps(drift_summary)
-    )
+        # Return structured output
+        return {
+            "statusCode": 200,
+            "modelResponse": result
+        }
 
-    return response
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "errorType": type(e).__name__,
+            "errorMessage": str(e)
+        }
