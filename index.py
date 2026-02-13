@@ -29,9 +29,14 @@ Drift Data:
             modelId="arn:aws:bedrock:eu-north-1:206716568967:inference-profile/eu.amazon.nova-micro-v1:0",
             contentType="application/json",
             body=json.dumps({
-                "inputText": prompt_text,
-                "textGenerationConfig": {
-                    "maxTokenCount": 1000,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt_text
+                    }
+                ],
+                "inferenceConfig": {
+                    "maxTokens": 1000,
                     "temperature": 0.2
                 }
             })
