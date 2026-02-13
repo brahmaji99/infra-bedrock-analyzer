@@ -33,7 +33,7 @@ Terraform Drift JSON:
 """
 
     response = bedrock.invoke_model(
-        modelId=MODEL_ID,
+        modelId="anthropic.claude-sonnet-4-20250514-v1:0",
         contentType="application/json",
         accept="application/json",
         body=json.dumps({
