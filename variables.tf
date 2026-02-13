@@ -3,5 +3,5 @@ variable "region" {
 }
 
 variable "bedrock_model_id" {
-  default = "anthropic.claude-3-sonnet-20240229-v1:0"
+  default = "anthropic.claude-sonnet-4-20250514-v1:0"
 }
